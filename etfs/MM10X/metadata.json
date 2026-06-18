@@ -1,0 +1,13 @@
+{
+  "id": "MM10X",
+  "name": "MM10X",
+  "full_name": "Market Makers 10X",
+  "description": "A high-risk community ETF simulation focused on small-cap stocks with potential 10X upside.",
+  "theme": "Small Caps / High Growth",
+  "db_file": "mm10x.db",
+  "portfolio_file": "portfolio.csv",
+  "initial_capital": 100000,
+  "drift_threshold": 0.02,
+  "status": "active",
+  "creation_date": "2026-06-15"
+}

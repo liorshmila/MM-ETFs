@@ -1,0 +1,13 @@
+{
+  "id": "MMAI",
+  "name": "MMAI",
+  "full_name": "Market Makers A.I.",
+  "description": "AI infrastructure, semiconductors, data centers and cloud ETF simulation.",
+  "theme": "AI / Semiconductors",
+  "db_file": "mmai.db",
+  "portfolio_file": "portfolio.csv",
+  "initial_capital": 100000,
+  "drift_threshold": 0.02,
+  "status": "active",
+  "creation_date": "2026-04-13"
+}
