@@ -7,7 +7,9 @@ import base64
 from etf_config import load_etfs
 import json
 import streamlit.components.v1 as components
-import os
+import requests
+from urllib.parse import urlencode
+import html
 # ----------------------------------------
 
 # ------------ Page Config ---------------
@@ -20,27 +22,33 @@ st.set_page_config(
 # ------------- Globals ------------------
 YOUTUBE_URL = "https://www.youtube.com/@MarketMakersIL"
 LOGO_PATH = "assets/MMLogo.jpg"
-ACCESS_PASSWORD = st.secrets.get(
-    "ACCESS_PASSWORD",
-    os.getenv("ACCESS_PASSWORD", "")
-)
-ALLOWED_USERS_CSV = "allowed_users.csv"
 MAIN_PAGE_BACKGROUND = "assets/MMETFsBackground.png"
 YOUTUBE_ICON = "assets/YouTubeLogo.png"
 MAIL_ICON = "assets/MailLogo.png"
+MMETFSFAV = "assets/MMETFsFavicon.png"
 COMPARE_CONFIG = "compare_config.json"
 COMPARE_DB = "compare.db"
 # ----------------------------------------
 
-# ---------- Simple Access Gate ----------
-def load_allowed_users(csv_path):
+def image_to_base64(image_path):
     try:
-        users_df = pd.read_csv(csv_path)
-        users_df["email"] = users_df["email"].astype(str).str.lower().str.strip()
-        return set(users_df["email"].tolist())
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode()
     except FileNotFoundError:
-        return set()
-allowed_users = load_allowed_users(ALLOWED_USERS_CSV)
+        return None
+
+# ------------ Discord Config ------------
+DISCORD_CLIENT_ID = st.secrets["DISCORD_CLIENT_ID"]
+DISCORD_CLIENT_SECRET = st.secrets["DISCORD_CLIENT_SECRET"]
+DISCORD_REDIRECT_URI = st.secrets["DISCORD_REDIRECT_URI"]
+
+DISCORD_GUILD_ID = st.secrets["DISCORD_GUILD_ID"]
+DISCORD_ALLOWED_ROLE_ID = st.secrets["DISCORD_ALLOWED_ROLE_ID"]
+
+OAUTH_STATE_SECRET = st.secrets["OAUTH_STATE_SECRET"]
+# ----------------------------------------
+
+# ---------- Simple Access Gate ----------
 if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 # ----------------------------------------
@@ -244,40 +252,389 @@ st.markdown(
         color: #eaffea !important;
         font-weight: 800 !important;
     }
+
+        .login-page {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 22px;
+        padding: 24px 0 32px 0;
+    }
+    .login-card {
+        width: min(420px, calc(100% - 32px));
+        box-sizing: border-box;
+        padding: 26px 30px;
+        text-align: center;
+        border: 1px solid rgba(123,255,92,0.38);
+        border-radius: 22px;
+        background:
+            radial-gradient(
+                circle at top left,
+                rgba(123,255,92,0.13),
+                transparent 36%
+            ),
+            rgba(8,13,8,0.96);
+        box-shadow:
+            0 0 34px rgba(123,255,92,0.15),
+            0 18px 48px rgba(0,0,0,0.40);
+    }
+    .login-logo {
+        display: block;
+        width: 96px;
+        height: 96px;
+        object-fit: contain;
+        margin: 0 auto 14px auto;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+    .login-heading {
+        color: #eaffea;
+        font-size: 2.25rem;
+        font-weight: 900;
+        line-height: 1.05;
+        margin-bottom: 10px;
+    }
+    .login-tagline {
+        color: #7BFF5C;
+        font-size: 1.04rem;
+        font-weight: 800;
+        margin-bottom: 18px;
+    }
+    .login-access-text {
+        color: #d8ead8;
+        font-size: 0.98rem;
+        line-height: 1.55;
+        margin-bottom: 22px;
+    }
+    .discord-login-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 11px;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 14px 18px;
+        border-radius: 13px;
+        background: #5865F2;
+        color: #ffffff !important;
+        text-decoration: none !important;
+        font-size: 1.05rem;
+        font-weight: 900;
+        box-shadow: 0 0 22px rgba(88,101,242,0.30);
+        transition:
+            transform 0.16s ease,
+            box-shadow 0.16s ease;
+    }
+    .discord-login-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0 32px rgba(88,101,242,0.52);
+    }
+    .discord-login-button svg {
+        width: 25px;
+        height: 25px;
+        fill: #ffffff;
+        flex-shrink: 0;
+    }
+    .login-hero {
+        width: 100%;
+        min-height: 560px;
+        border-radius: 24px;
+        border: 1px solid rgba(123,255,92,0.20);
+        background-color: #050805;
+        background-size: contain;
+        background-position: center top;
+        background-repeat: no-repeat;
+        box-shadow: 0 0 30px rgba(123,255,92,0.10);
+    }
+    @media (max-width: 800px) {
+        .login-page {
+            padding-top: 12px;
+            gap: 16px;
+        }
+        .login-card {
+            padding: 22px 20px;
+        }
+        .login-hero {
+            min-height: 300px;
+        }
+    }
+    .login-error-card{
+        margin-top:18px;
+        padding:16px 18px;
+        border-radius:16px;
+        background:rgba(140,25,25,.18);
+        border:1px solid rgba(255,90,90,.35);
+        backdrop-filter:blur(8px);
+        text-align:center;
+    }
+    .login-error-icon{
+        font-size:1.6rem;
+        margin-bottom:8px;
+    }
+    .login-error-text{
+        color:#FFDCDC;
+        line-height:1.55;
+        font-size:.95rem;
+        font-weight:500;
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 # ----------------------------------------
 
+# ------------ Discord OAuth -------------
+DISCORD_AUTHORIZE_URL = "https://discord.com/oauth2/authorize"
+DISCORD_TOKEN_URL = "https://discord.com/api/oauth2/token"
+DISCORD_API_BASE = "https://discord.com/api/v10"
+
+def build_login_url():
+    params = {
+        "client_id": DISCORD_CLIENT_ID,
+        "response_type": "code",
+        "redirect_uri": DISCORD_REDIRECT_URI,
+        "scope": "identify guilds.members.read",
+        "prompt": "consent",
+    }
+    return f"{DISCORD_AUTHORIZE_URL}?{urlencode(params)}"
+
+def exchange_code_for_token(code):
+    response = requests.post(
+        DISCORD_TOKEN_URL,
+        data={
+            "client_id": DISCORD_CLIENT_ID,
+            "client_secret": DISCORD_CLIENT_SECRET,
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": DISCORD_REDIRECT_URI,
+        },
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        timeout=15,
+    )
+    response.raise_for_status()
+    access_token = response.json().get("access_token")
+    if not access_token:
+        raise RuntimeError("Discord did not return access token.")
+    return access_token
+
+def discord_get(path, access_token):
+    return requests.get(
+        f"{DISCORD_API_BASE}{path}",
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        },
+        timeout=15,
+    )
+
+def get_user_and_member(access_token):
+    user_response = discord_get(
+        "/users/@me",
+        access_token,
+    )
+    user_response.raise_for_status()
+    member_response = discord_get(
+        f"/users/@me/guilds/{DISCORD_GUILD_ID}/member",
+        access_token,
+    )
+    if member_response.status_code in (403, 404):
+        raise PermissionError(
+            "User is not a member of the Discord server."
+        )
+    member_response.raise_for_status()
+    return (
+        user_response.json(),
+        member_response.json(),
+    )
+
+def logout():
+    st.session_state["authenticated"] = False
+    st.session_state.pop("discord_user", None)
+    st.session_state.pop("login_error", None)
+
+    st.query_params.clear()
+    st.rerun()
+# ----------------------------------------
+
 # ------------ Authentication ------------
+st.session_state.setdefault("authenticated", False)
+st.session_state.setdefault("discord_user", None)
+st.session_state.setdefault("login_error", None)
+code = st.query_params.get("code")
+oauth_error = st.query_params.get("error")
+if oauth_error:
+    st.session_state["login_error"] = (
+        f"Discord login was cancelled: {oauth_error}"
+    )
+    st.query_params.clear()
+elif code and not st.session_state["authenticated"]:
+    try:
+        access_token = exchange_code_for_token(code)
+        user, member = get_user_and_member(access_token)
+
+        user_roles = {
+            str(role_id)
+            for role_id in member.get("roles", [])
+        }
+        if DISCORD_ALLOWED_ROLE_ID not in user_roles:
+            raise PermissionError(
+                "Your Discord account was verified.\n\n"
+                "Unfortunately you do not currently have "
+                "an active PREMIUM membership "
+                "in the Market Makers community."
+            )
+        st.session_state["authenticated"] = True
+        st.session_state["discord_user"] = user
+        st.session_state["login_error"] = None
+        st.query_params.clear()
+        st.rerun()
+    except PermissionError as exc:
+        st.session_state["login_error"] = str(exc)
+        st.query_params.clear()
+    except requests.HTTPError as exc:
+        status_code = (
+            exc.response.status_code
+            if exc.response is not None
+            else "unknown"
+        )
+        st.session_state["login_error"] = (
+            f"Discord returned HTTP error {status_code}."
+        )
+        st.query_params.clear()
+    except requests.RequestException:
+        st.session_state["login_error"] = (
+            "Communication with Discord failed. "
+            "Please try again."
+        )
+        st.query_params.clear()
+    except Exception as exc:
+        st.session_state["login_error"] = (
+            f"Unexpected login error: {type(exc).__name__}"
+        )
+        st.query_params.clear()
 if not st.session_state["authenticated"]:
-    st.title("MM ETFs Access")
-    st.write("Enter your approved email and access password.")
-
-    email = st.text_input("Email").lower().strip()
-    password = st.text_input("Password", type="password")
-
-    if st.button("Login"):
-        if email in allowed_users and password == ACCESS_PASSWORD:
-            st.session_state["authenticated"] = True
-            st.session_state["user_email"] = email
-            st.rerun()
-        elif email not in allowed_users:
-            st.error("Access denied: email is not approved.")
-        else:
-            st.error("Access denied: wrong password.")
+    login_url = build_login_url()
+    background_base64 = image_to_base64(MAIN_PAGE_BACKGROUND)
+    logo_base64 = image_to_base64("assets/MMETFsFavicon.png")
+    logo_html = (
+        f'<img class="login-logo" '
+        f'src="data:image/png;base64,{logo_base64}" '
+        f'alt="MM ETFs">'
+        if logo_base64
+        else ""
+    )
+    hero_style = (
+        f"background-image:"
+        f"linear-gradient(rgba(0,0,0,0.08), rgba(0,0,0,0.22)),"
+        f"url('data:image/png;base64,{background_base64}');"
+        if background_base64
+        else ""
+    )
+    st.markdown(
+        f"""
+        <div class="login-page">
+            <div class="login-card">
+                {logo_html}
+                <div class="login-heading">MM ETFs</div>
+                <div class="login-tagline">
+                    AI Managed Investment Portfolios
+                </div>
+                <div class="login-access-text">
+                    Exclusive access for<br>
+                    Market Makers Premium members
+                </div>
+                <a
+                    class="discord-login-button"
+                    href="{login_url}"
+                    target="_self"
+                >
+                    <svg viewBox="0 0 127.14 96.36" aria-hidden="true">
+                        <path d="M107.7 8.07A105.15 105.15 0 0 0 81.47 0a72.06 72.06 0 0 0-3.36 6.83 97.68 97.68 0 0 0-29.11 0A72.37 72.37 0 0 0 45.64 0 105.89 105.89 0 0 0 19.39 8.09C2.79 32.65-1.71 56.6.54 80.21a105.73 105.73 0 0 0 32.17 16.15 77.7 77.7 0 0 0 6.89-9.47 68.42 68.42 0 0 1-10.85-5.18c.91-.66 1.8-1.34 2.66-2a75.57 75.57 0 0 0 64.32 0c.87.71 1.76 1.39 2.66 2a68.68 68.68 0 0 1-10.87 5.19 77 77 0 0 0 6.89 9.46 105.25 105.25 0 0 0 32.17-16.14c2.64-27.38-4.51-51.11-18.88-72.15ZM42.45 65.69C36.18 65.69 31 59.94 31 52.86S36.07 40 42.45 40s11.52 5.8 11.41 12.86-5.04 12.83-11.41 12.83Zm42.24 0c-6.27 0-11.41-5.75-11.41-12.83S78.33 40 84.69 40s11.52 5.8 11.41 12.86-5.04 12.83-11.41 12.83Z"/>
+                    </svg>
+                    <span>Continue with Discord</span>
+                </a>
+            </div>
+            <div class="login-hero" style="{hero_style}"></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if st.session_state.get("login_error"):
+        st.markdown(
+            f"""
+            <div class="login-error-card">
+                <div class="login-error-icon">⚠️</div>
+                <div class="login-error-text">
+                    {st.session_state["login_error"].replace(chr(10), "<br>")}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     st.stop()
 # ----------------------------------------
 
-# ------------ ETF Home Page -------------
-def image_to_base64(image_path):
-    try:
-        with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode()
-    except FileNotFoundError:
-        return None
+# ---------- Login Screen ----------------
+if st.session_state["authenticated"]:
+    discord_user = st.session_state.get("discord_user") or {}
+    discord_user_id = str(discord_user.get("id", ""))
+    discord_avatar = discord_user.get("avatar")
+    display_name = html.escape(
+        discord_user.get("global_name")
+        or discord_user.get("username")
+        or "Discord User"
+    )
+    if discord_avatar and discord_user_id:
+        avatar_extension = (
+            "gif"
+            if str(discord_avatar).startswith("a_")
+            else "png"
+        )
+        avatar_url = (
+            f"https://cdn.discordapp.com/avatars/"
+            f"{discord_user_id}/{discord_avatar}."
+            f"{avatar_extension}?size=128"
+        )
+    else:
+        avatar_url = "https://cdn.discordapp.com/embed/avatars/0.png"
+    user_card_html = (
+        '<div style="display:flex;align-items:center;gap:10px;">'
+        f'<img src="{avatar_url}" alt="Discord avatar" '
+        'style="width:52px;height:52px;'
+        'border-radius:50%;'
+        'object-fit:cover;'
+        'border:2px solid rgba(123,255,92,0.55);'
+        'box-shadow:0 0 12px rgba(123,255,92,0.28);">'
+        '<div style="line-height:1.25;text-align:left;">'
+        f'<div style="color:#eaffea;font-weight:900;font-size:1.02rem;letter-spacing:0.2px;">'
+        f'{display_name}</div>'
+        '<div style="color:#bfeab7;font-size:0.82rem;font-weight:800;">'
+        '<span style="color:#57F287;">●</span> Market Makers Premium</div>'
+        '</div>'
+        '</div>'
+    )
+    with st.container(
+        horizontal=True,
+        horizontal_alignment="right",
+        vertical_alignment="center",
+    ):
+        st.markdown(
+            user_card_html,
+            unsafe_allow_html=True,
+        )
+        if st.button(
+            "Logout",
+            key="discord_logout",
+        ):
+            logout()
+# ----------------------------------------
 
+# ------------ ETF Home Page -------------
 def load_compare_assets():
     try:
         with open(COMPARE_CONFIG, "r", encoding="utf-8") as file:
