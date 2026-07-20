@@ -17,6 +17,12 @@ st.set_page_config(
     page_title="MM ETFs",
     page_icon="assets/MMFavicon.png",
     layout="wide")
+def image_to_base64(image_path):
+    try:
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode()
+    except FileNotFoundError:
+        return None
 # ----------------------------------------
 
 # ------------- Globals ------------------
@@ -30,21 +36,12 @@ COMPARE_CONFIG = "compare_config.json"
 COMPARE_DB = "compare.db"
 # ----------------------------------------
 
-def image_to_base64(image_path):
-    try:
-        with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode()
-    except FileNotFoundError:
-        return None
-
 # ------------ Discord Config ------------
 DISCORD_CLIENT_ID = st.secrets["DISCORD_CLIENT_ID"]
 DISCORD_CLIENT_SECRET = st.secrets["DISCORD_CLIENT_SECRET"]
 DISCORD_REDIRECT_URI = st.secrets["DISCORD_REDIRECT_URI"]
-
 DISCORD_GUILD_ID = st.secrets["DISCORD_GUILD_ID"]
 DISCORD_ALLOWED_ROLE_ID = st.secrets["DISCORD_ALLOWED_ROLE_ID"]
-
 OAUTH_STATE_SECRET = st.secrets["OAUTH_STATE_SECRET"]
 # ----------------------------------------
 
@@ -633,6 +630,41 @@ if not st.session_state["authenticated"]:
             fill: #ffffff;
             flex-shrink: 0;
         }}
+        .membership-invite {{
+            margin-top: 22px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(123,255,92,0.24);
+        }}
+        .membership-invite-title {{
+            color: #eaffea;
+            font-size: 1rem;
+            font-weight: 900;
+            margin-bottom: 9px;
+        }}
+        .membership-invite-text {{
+            color: #bcd5bc;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 14px;
+        }}
+        .membership-link {{
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 18px;
+            border: 1px solid rgba(123,255,92,0.55);
+            border-radius: 11px;
+            background: rgba(123,255,92,0.10);
+            color: #7BFF5C;
+            text-decoration: none;
+            font-size: 0.92rem;
+            font-weight: 900;
+            transition: transform 0.16s ease, background 0.16s ease;
+        }}
+        .membership-link:hover {{
+            transform: translateY(-1px);
+            background: rgba(123,255,92,0.18);
+        }}
         .popup-error {{
             display: none;
             margin-top: 14px;
@@ -653,6 +685,32 @@ if not st.session_state["authenticated"]:
             box-shadow: 0 0 30px rgba(123,255,92,0.10);
             box-sizing: border-box;
         }}
+        .membership-section {{
+            width: min(900px, calc(100% - 32px));
+            padding: 26px;
+            box-sizing: border-box;
+            border: 1px solid rgba(255,255,255,0.22);
+            border-radius: 20px;
+            background: rgba(7,16,7,0.62);
+            backdrop-filter: blur(13px);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.32);
+        }}
+        .hero-glass-title {{
+            color: #eaffea;
+            font-size: 1.45rem;
+            font-weight: 900;
+            margin-bottom: 18px;
+        }}
+        .hero-benefits {{
+            display: grid;
+            gap: 11px;
+            margin-bottom: 22px;
+            color: #e2f3e2;
+            font-size: 0.98rem;
+            font-weight: 700;
+        }}
+        .hero-benefits span::first-letter {{ color: #7BFF5C; }}
+        .hero-membership-link {{ width: 100%; box-sizing: border-box; }}
         .login-error-card {{
             width: min(420px, calc(100% - 32px));
             box-sizing: border-box;
@@ -664,6 +722,17 @@ if not st.session_state["authenticated"]:
         }}
         .login-error-icon {{ font-size: 1.6rem; margin-bottom: 8px; }}
         .login-error-text {{ color: #FFDCDC; line-height: 1.55; font-size: .95rem; font-weight: 500; }}
+        .login-error-membership {{
+            display: none;
+            width: min(420px, calc(100% - 32px));
+            box-sizing: border-box;
+            padding: 18px;
+            border-top: 1px solid rgba(123,255,92,0.24);
+            text-align: center;
+        }}
+        .login-error-card + .login-error-membership {{ display: block; }}
+        .login-error-membership-title {{ color: #eaffea; font-weight: 900; margin-bottom: 7px; }}
+        .login-error-membership-text {{ color: #bcd5bc; margin-bottom: 13px; }}
         .login-away-message {{
             min-height: 100vh;
             display: flex;
@@ -683,6 +752,7 @@ if not st.session_state["authenticated"]:
             .login-page {{ padding-top: 12px; gap: 16px; }}
             .login-card {{ padding: 22px 20px; }}
             .login-hero {{ min-height: 300px; }}
+            .membership-section {{ padding: 22px; }}
             .login-away-final {{ font-size: 2.2rem; }}
         }}
         </style>
@@ -708,9 +778,38 @@ if not st.session_state["authenticated"]:
                         Your browser blocked the new tab.<br>
                         Please allow pop-ups and try again.
                     </div>
+                    <div class="membership-invite">
+                        <div class="membership-invite-title">New to Market Makers?</div>
+                        <div class="membership-invite-text">
+                            Join our investment community and unlock access to MM ETFs.
+                        </div>
+                        <a class="membership-link" href="https://www.marketmakersil.com" target="_blank" rel="noopener noreferrer">
+                            Explore Membership
+                        </a>
+                    </div>
                 </div>
                 {login_error_html}
+                <div class="login-error-membership">
+                    <div class="login-error-membership-title">Want full access?</div>
+                    <div class="login-error-membership-text">Become a Premium member</div>
+                    <a class="membership-link" href="https://www.marketmakersil.com" target="_blank" rel="noopener noreferrer">
+                        Explore Membership
+                    </a>
+                </div>
                 <div class="login-hero" style="{hero_style}"></div>
+                <div class="membership-section">
+                    <div class="hero-glass-title">Why join Market Makers?</div>
+                    <div class="hero-benefits">
+                        <span>✓ AI Managed Portfolios</span>
+                        <span>✓ Premium Discord Community</span>
+                        <span>✓ Daily Market Reviews</span>
+                        <span>✓ Live Sessions</span>
+                        <span>✓ Watchlists &amp; Research</span>
+                    </div>
+                    <a class="membership-link hero-membership-link" href="https://www.marketmakersil.com" target="_blank" rel="noopener noreferrer">
+                        Explore Membership
+                    </a>
+                </div>
             </div>
         </div>
         <script>
@@ -744,7 +843,7 @@ if not st.session_state["authenticated"]:
         </body>
         </html>
         """,
-        height=1050,
+        height=1500,
         scrolling=False,
     )
     st.stop()
