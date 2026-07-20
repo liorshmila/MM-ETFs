@@ -843,7 +843,7 @@ if not st.session_state["authenticated"]:
         </body>
         </html>
         """,
-        height=1500,
+        height=1600,
         scrolling=False,
     )
     st.stop()
