@@ -10,6 +10,7 @@ import streamlit.components.v1 as components
 import requests
 from urllib.parse import urlencode
 import html
+from urllib.parse import urlparse, parse_qsl
 # ----------------------------------------
 
 # ------------ Page Config ---------------
@@ -519,6 +520,17 @@ elif code and not st.session_state["authenticated"]:
         st.query_params.clear()
 if not st.session_state["authenticated"]:
     login_url = build_login_url()
+    parsed_login_url = urlparse(login_url)
+    oauth_hidden_fields = "\n".join(
+        f'<input type="hidden" name="{html.escape(key)}" '
+        f'value="{html.escape(value, quote=True)}">'
+        for key, value in parse_qsl(parsed_login_url.query)
+    )
+    oauth_action = (
+        f"{parsed_login_url.scheme}://"
+        f"{parsed_login_url.netloc}"
+        f"{parsed_login_url.path}"
+    )
     background_base64 = image_to_base64(MAIN_PAGE_BACKGROUND)
     logo_base64 = image_to_base64("assets/MMETFsFavicon.png")
     logo_html = (
@@ -548,16 +560,23 @@ if not st.session_state["authenticated"]:
                     Exclusive access for<br>
                     Market Makers Premium members
                 </div>
-                <a
-                    class="discord-login-button"
-                    href="{login_url}"
-                    target="_parent"
+                <form
+                    action="{oauth_action}"
+                    method="get"
+                    target="_self"
+                    style="width:100%;margin:0;"
                 >
-                    <svg viewBox="0 0 127.14 96.36" aria-hidden="true">
-                        <path d="M107.7 8.07A105.15 105.15 0 0 0 81.47 0a72.06 72.06 0 0 0-3.36 6.83 97.68 97.68 0 0 0-29.11 0A72.37 72.37 0 0 0 45.64 0 105.89 105.89 0 0 0 19.39 8.09C2.79 32.65-1.71 56.6.54 80.21a105.73 105.73 0 0 0 32.17 16.15 77.7 77.7 0 0 0 6.89-9.47 68.42 68.42 0 0 1-10.85-5.18c.91-.66 1.8-1.34 2.66-2a75.57 75.57 0 0 0 64.32 0c.87.71 1.76 1.39 2.66 2a68.68 68.68 0 0 1-10.87 5.19 77 77 0 0 0 6.89 9.46 105.25 105.25 0 0 0 32.17-16.14c2.64-27.38-4.51-51.11-18.88-72.15ZM42.45 65.69C36.18 65.69 31 59.94 31 52.86S36.07 40 42.45 40s11.52 5.8 11.41 12.86-5.04 12.83-11.41 12.83Zm42.24 0c-6.27 0-11.41-5.75-11.41-12.83S78.33 40 84.69 40s11.52 5.8 11.41 12.86-5.04 12.83-11.41 12.83Z"/>
-                    </svg>
-                    <span>Continue with Discord</span>
-                </a>
+                    {oauth_hidden_fields}
+                    <button
+                        type="submit"
+                        class="discord-login-button"
+                    >
+                        <svg viewBox="0 0 127.14 96.36" aria-hidden="true">
+                            <path d="M107.7 8.07A105.15 105.15 0 0 0 81.47 0a72.06 72.06 0 0 0-3.36 6.83 97.68 97.68 0 0 0-29.11 0A72.37 72.37 0 0 0 45.64 0 105.89 105.89 0 0 0 19.39 8.09C2.79 32.65-1.71 56.6.54 80.21a105.73 105.73 0 0 0 32.17 16.15 77.7 77.7 0 0 0 6.89-9.47 68.42 68.42 0 0 1-10.85-5.18c.91-.66 1.8-1.34 2.66-2a75.57 75.57 0 0 0 64.32 0c.87.71 1.76 1.39 2.66 2a68.68 68.68 0 0 1-10.87 5.19 77 77 0 0 0 6.89 9.46 105.25 105.25 0 0 0 32.17-16.14c2.64-27.38-4.51-51.11-18.88-72.15ZM42.45 65.69C36.18 65.69 31 59.94 31 52.86S36.07 40 42.45 40s11.52 5.8 11.41 12.86-5.04 12.83-11.41 12.83Zm42.24 0c-6.27 0-11.41-5.75-11.41-12.83S78.33 40 84.69 40s11.52 5.8 11.41 12.86-5.04 12.83-11.41 12.83Z"/>
+                        </svg>
+                        <span>Continue with Discord</span>
+                    </button>
+                </form>
             </div>
             <div class="login-hero" style="{hero_style}"></div>
         </div>
