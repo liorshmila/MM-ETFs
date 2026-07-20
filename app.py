@@ -535,45 +535,218 @@ if not st.session_state["authenticated"]:
         if background_base64
         else ""
     )
-    st.markdown(
+    login_url_js = json.dumps(login_url)
+    login_error = st.session_state.get("login_error")
+    login_error_html = (
+        '<div class="login-error-card">'
+        '<div class="login-error-icon">⚠️</div>'
+        f'<div class="login-error-text">'
+        f'{html.escape(login_error).replace(chr(10), "<br>")}'
+        '</div></div>'
+        if login_error
+        else ""
+    )
+    components.html(
         f"""
-        <div class="login-page">
-            <div class="login-card">
-                {logo_html}
-                <div class="login-heading">MM ETFs</div>
-                <div class="login-tagline">
-                    AI Managed Investment Portfolios
-                </div>
-                <div class="login-access-text">
-                    Exclusive access for<br>
-                    Market Makers Premium members
-                </div>
-                <a class="discord-login-button"
-                   href="{login_url}"
-                   target="_blank">
+        <!doctype html>
+        <html>
+        <head>
+        <meta charset="utf-8">
+        <style>
+        html, body {{
+            margin: 0;
+            min-height: 100%;
+            background: #071007;
+            color: #e8f5e9;
+            font-family: Arial, sans-serif;
+        }}
+        body {{ overflow: hidden; }}
+        .login-page {{
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 22px;
+            padding: 24px 0 32px;
+            box-sizing: border-box;
+        }}
+        .login-card {{
+            width: min(420px, calc(100% - 32px));
+            box-sizing: border-box;
+            padding: 26px 30px;
+            text-align: center;
+            border: 1px solid rgba(123,255,92,0.38);
+            border-radius: 22px;
+            background: radial-gradient(circle at top left, rgba(123,255,92,0.13), transparent 36%), rgba(8,13,8,0.96);
+            box-shadow: 0 0 34px rgba(123,255,92,0.15), 0 18px 48px rgba(0,0,0,0.40);
+        }}
+        .login-logo {{
+            display: block;
+            width: 96px;
+            height: 96px;
+            object-fit: contain;
+            margin: 0 auto 14px;
+        }}
+        .login-heading {{
+            color: #eaffea;
+            font-size: 2.25rem;
+            font-weight: 900;
+            line-height: 1.05;
+            margin-bottom: 10px;
+        }}
+        .login-tagline {{
+            color: #7BFF5C;
+            font-size: 1.04rem;
+            font-weight: 800;
+            margin-bottom: 18px;
+        }}
+        .login-access-text {{
+            color: #d8ead8;
+            font-size: 0.98rem;
+            line-height: 1.55;
+            margin-bottom: 22px;
+        }}
+        .discord-login-button {{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 11px;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 14px 18px;
+            border-radius: 13px;
+            background: #5865F2;
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 1.05rem;
+            font-weight: 900;
+            box-shadow: 0 0 22px rgba(88,101,242,0.30);
+            transition: transform 0.16s ease, box-shadow 0.16s ease;
+        }}
+        .discord-login-button:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 0 32px rgba(88,101,242,0.52);
+        }}
+        .discord-login-button svg {{
+            width: 25px;
+            height: 25px;
+            fill: #ffffff;
+            flex-shrink: 0;
+        }}
+        .popup-error {{
+            display: none;
+            margin-top: 14px;
+            color: #FFDCDC;
+            font-size: 0.9rem;
+            font-weight: 700;
+            line-height: 1.45;
+        }}
+        .login-hero {{
+            width: 100%;
+            min-height: 560px;
+            border-radius: 24px;
+            border: 1px solid rgba(123,255,92,0.20);
+            background-color: #050805;
+            background-size: contain;
+            background-position: center top;
+            background-repeat: no-repeat;
+            box-shadow: 0 0 30px rgba(123,255,92,0.10);
+            box-sizing: border-box;
+        }}
+        .login-error-card {{
+            width: min(420px, calc(100% - 32px));
+            box-sizing: border-box;
+            padding: 16px 18px;
+            border-radius: 16px;
+            background: rgba(140,25,25,.18);
+            border: 1px solid rgba(255,90,90,.35);
+            text-align: center;
+        }}
+        .login-error-icon {{ font-size: 1.6rem; margin-bottom: 8px; }}
+        .login-error-text {{ color: #FFDCDC; line-height: 1.55; font-size: .95rem; font-weight: 500; }}
+        .login-away-message {{
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            box-sizing: border-box;
+            background: #071007;
+            color: #ffffff;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 800;
+            line-height: 1.6;
+        }}
+        .login-away-final {{ color: #7BFF5C; font-weight: 900; font-size: 3rem; }}
+        @media (max-width: 800px) {{
+            .login-page {{ padding-top: 12px; gap: 16px; }}
+            .login-card {{ padding: 22px 20px; }}
+            .login-hero {{ min-height: 300px; }}
+            .login-away-final {{ font-size: 2.2rem; }}
+        }}
+        </style>
+        </head>
+        <body>
+        <div id="login-root">
+            <div class="login-page">
+                <div class="login-card">
+                    {logo_html}
+                    <div class="login-heading">MM ETFs</div>
+                    <div class="login-tagline">AI Managed Investment Portfolios</div>
+                    <div class="login-access-text">
+                        Exclusive access for<br>
+                        Market Makers Premium members
+                    </div>
+                    <a id="discord-login-button" class="discord-login-button" href="{login_url}" target="_blank">
                         <svg viewBox="0 0 127.14 96.36" aria-hidden="true">
                             <path d="M107.7 8.07A105.15 105.15 0 0 0 81.47 0a72.06 72.06 0 0 0-3.36 6.83 97.68 97.68 0 0 0-29.11 0A72.37 72.37 0 0 0 45.64 0 105.89 105.89 0 0 0 19.39 8.09C2.79 32.65-1.71 56.6.54 80.21a105.73 105.73 0 0 0 32.17 16.15 77.7 77.7 0 0 0 6.89-9.47 68.42 68.42 0 0 1-10.85-5.18c.91-.66 1.8-1.34 2.66-2a75.57 75.57 0 0 0 64.32 0c.87.71 1.76 1.39 2.66 2a68.68 68.68 0 0 1-10.87 5.19 77 77 0 0 0 6.89 9.46 105.25 105.25 0 0 0 32.17-16.14c2.64-27.38-4.51-51.11-18.88-72.15ZM42.45 65.69C36.18 65.69 31 59.94 31 52.86S36.07 40 42.45 40s11.52 5.8 11.41 12.86-5.04 12.83-11.41 12.83Zm42.24 0c-6.27 0-11.41-5.75-11.41-12.83S78.33 40 84.69 40s11.52 5.8 11.41 12.86-5.04 12.83-11.41 12.83Z"/>
                         </svg>
                         <span>Continue with Discord</span>
-                </a>
-            </div>
-            <div class="login-hero" style="{hero_style}"></div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if st.session_state.get("login_error"):
-        st.markdown(
-            f"""
-            <div class="login-error-card">
-                <div class="login-error-icon">⚠️</div>
-                <div class="login-error-text">
-                    {st.session_state["login_error"].replace(chr(10), "<br>")}
+                    </a>
+                    <div id="popup-error" class="popup-error">
+                        Your browser blocked the new tab.<br>
+                        Please allow pop-ups and try again.
+                    </div>
                 </div>
+                {login_error_html}
+                <div class="login-hero" style="{hero_style}"></div>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        </div>
+        <script>
+        const LOGIN_URL = {login_url_js};
+        const loginButton = document.getElementById("discord-login-button");
+        const loginRoot = document.getElementById("login-root");
+        const popupError = document.getElementById("popup-error");
+
+        loginButton.addEventListener("click", function (event) {{
+            event.preventDefault();
+            const authWindow = window.open(LOGIN_URL, "_blank");
+
+            if (authWindow) {{
+                try {{
+                    authWindow.opener = null;
+                }} catch (error) {{}}
+
+                loginRoot.innerHTML = `
+                    <div class="login-away-message">
+                        <div>
+                            MM ETFs Page with Discord authentication<br>
+                            Was opened in a new tab...<br><br>
+                            <span class="login-away-final">You can safely close this page.</span>
+                        </div>
+                    </div>`;
+            }} else {{
+                popupError.style.display = "block";
+            }}
+        }});
+        </script>
+        </body>
+        </html>
+        """,
+        height=1050,
+        scrolling=False,
+    )
     st.stop()
 # ----------------------------------------
 
